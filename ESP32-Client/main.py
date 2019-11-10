@@ -5,14 +5,18 @@ from umqtt.simple import MQTTClient
 import mfrc522
 from os import uname
 import micropython
+import machine
+import esp32
+import sys
+import time
 
 #MQTT params
 mqtt_server = '192.168.12.40'
 client_id = 'esp32'
+# Topic
 rfid_swipe = b'/devices/esp32/rfid_swipe'
 rfid_checkin = b'/devices/esp32/rfid_checkin'
-# Door unlock?
-canAccess = False
+device_state = b'/devices/esp32/rfid_checkin'
 
 client = MQTTClient(client_id, mqtt_server)
 
@@ -45,22 +49,35 @@ client.on_connect = on_connect
 client.set_callback(subscribe_calback)
 client.connect()
 client.subscribe(rfid_checkin, 0)
+
+#Wake up trigger pin
+pir_wake = Pin(14, mode = Pin.IN)
+accident_touch = Pin(12, mode = Pin.IN)
+esp32.wake_on_ext1(pins = (pir_wake,accident_touch), level = esp32.WAKEUP_ANY_HIGH)
+if machine.reset_cause() == machine.DEEPSLEEP_RESET:
+    print('woke from a deep sleep')
+    client.publish(device_state, "1")
+
+# Door unlock?
+canAccess = False
+
 #Relay params
 door_lock = Pin(13, Pin.OUT)
-door_lock.on()
+door_lock.on()  # Initial state
 
 def twoDigitHex(number):
   return '%02x' % number
 
 def do_read():
   global canAccess
+  working = True
   if uname()[0] == 'WiPy':
     rdr = mfrc522.MFRC522("GP14", "GP16", "GP15", "GP22", "GP17")
   elif uname()[0] == 'esp8266':
     rdr = mfrc522.MFRC522(0, 2, 4, 5, 14)
     
   elif uname()[0] == 'esp32':
-    rdr = mfrc522.MFRC522(18, 23, 19, 4, 12)
+    rdr = mfrc522.MFRC522(18, 23, 19, 4, 26)
     
   else:
     raise RuntimeError("Unsupported platform")
@@ -69,14 +86,13 @@ def do_read():
   print("Place card before reader to read from address 0x08")
   print("")
   hex_uid = ""
+  start_reading = time.ticks_ms()
   try:
-    while True:
+    while (working):
       (stat, tag_type) = rdr.request(rdr.REQIDL)
-
       if stat == rdr.OK:
-
         (stat, raw_uid) = rdr.anticoll()
-
+        
         if stat == rdr.OK:
           print("New card detected")
           print("  - tag type: 0x%02x" % tag_type)
@@ -101,6 +117,10 @@ def do_read():
           sleep_ms(1000)
           print("Can Access Value")
           print(canAccess)
+      else:
+        if (abs(time.ticks_diff(time.ticks_ms(), start_reading) > 60000)):
+          print("Going to sleep")
+          machine.deepsleep()
 
   except KeyboardInterrupt:
     print("Bye")

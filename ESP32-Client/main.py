@@ -16,7 +16,7 @@ client_id = 'esp32'
 # Topic
 rfid_swipe = b'/devices/esp32/rfid_swipe'
 rfid_checkin = b'/devices/esp32/rfid_checkin'
-device_state = b'/devices/esp32/rfid_checkin'
+device_state = b'/devices/esp32/state'
 
 client = MQTTClient(client_id, mqtt_server)
 
@@ -50,19 +50,29 @@ client.set_callback(subscribe_calback)
 client.connect()
 client.subscribe(rfid_checkin, 0)
 
+
+# Initial state
+normal_boot = True  
+
+if normal_boot:
+  client.publish(device_state, "ON")
+
 #Wake up trigger pin
-pir_wake = Pin(14, mode = Pin.IN)
-accident_touch = Pin(12, mode = Pin.IN)
-esp32.wake_on_ext1(pins = (pir_wake,accident_touch), level = esp32.WAKEUP_ANY_HIGH)
+pir_wake = Pin(34, mode = Pin.IN, pull = Pin.PULL_DOWN)
+esp32.wake_on_ext1([pir_wake], Pin.WAKE_HIGH)
 if machine.reset_cause() == machine.DEEPSLEEP_RESET:
-    print('woke from a deep sleep')
-    client.publish(device_state, "1")
+    print('woke from a deep sleep, by the pulling of pin 34')
+    if normal_boot:
+      client.publish(device_state, "Wake from deepsleep")
+      normal_boot = False
+
+    
 
 # Door unlock?
 canAccess = False
 
 #Relay params
-door_lock = Pin(13, Pin.OUT)
+door_lock = Pin(22, Pin.OUT)
 door_lock.on()  # Initial state
 
 def twoDigitHex(number):
@@ -98,7 +108,8 @@ def do_read():
           print("  - tag type: 0x%02x" % tag_type)
           hex_uid = twoDigitHex(raw_uid[0]) + twoDigitHex(raw_uid[1]) + twoDigitHex(raw_uid[2]) + twoDigitHex(raw_uid[3])
           print(hex_uid)
-          client.publish(rfid_swipe, hex_uid)
+          msg = ('UID = {}'.format(hex_uid))
+          client.publish(rfid_swipe, msg)
           print("Publish to broker")
           if rdr.select_tag(raw_uid) == rdr.OK:
 
@@ -120,6 +131,8 @@ def do_read():
       else:
         if (abs(time.ticks_diff(time.ticks_ms(), start_reading) > 60000)):
           print("Going to sleep")
+          client.publish(device_state, "OFF")
+          sleep_ms(1000)
           machine.deepsleep()
 
   except KeyboardInterrupt:

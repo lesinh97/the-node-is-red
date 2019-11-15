@@ -6,6 +6,10 @@ from time import sleep_ms
 import machine
 import dht
 
+# UART for Lora
+uart = machine.UART(1, 9600)
+uart.init(9600, bits=8, parity = None, stop =1)
+
 mqtt_server='192.168.12.40'
 client_id = 'esp8266'
 dht_data = b'/devices/esp8266/dht_data'
@@ -43,6 +47,8 @@ while True:
     temp = sensor.temperature()
     hum = sensor.humidity()
     msg = ('TEMP={0:3.1f},HUM={1:3.1f}'.format(temp, hum))
+    print(uart.write('esp\n'.encode('utf-8')))
+    print("Published to LORA")
     client.publish(dht_data, msg)  # Publish sensor data to MQTT topic
     client.check_msg()
     print(msg)

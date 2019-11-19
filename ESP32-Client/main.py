@@ -25,8 +25,7 @@ def on_connect(client, userdata, flags, rc):
      print("Connected flags"+str(flags)+"result code "\
      +str(rc)+"client1_id ")
      client.connected_flag=True
-     
-  
+       
 def subscribe_calback(topic, msg):
   global canAccess
   if(msg == b"1"):

@@ -1,8 +1,21 @@
 import time
 import serial
- 
+import paho.mqtt.client as mqtt
+
+# MQTT_SERVER = "localhost"
+# lora_signal = "devices/lora/"
+# client_id = "raspberry"
+# # MQTT Callback
+# def on_connect(client, userdata, flags, rc):
+#   print("Connected to server, result code "+str(rc))
+#   client.connected_flags = True
+
+# client = mqtt.Client()
+# client.on_connect = on_connect
+# client.connect(client_id, MQTT_SERVER)
+
 ser = serial.Serial(
-  port = '/dev/ttyS0',
+  port = '/dev/ttyAMA0',
   baudrate = 9600,
   parity = serial.PARITY_NONE,
   stopbits = serial.STOPBITS_ONE,
@@ -10,14 +23,7 @@ ser = serial.Serial(
   timeout = 1
 )
 
-def readFromLora(ser):
-  rv = ''
-  while True:
-    if ser.inWaiting() > 0 :
-      s = ser.read(4)
-      rv += str(s)
-      return rv
-
 while True:
-  rcv = readFromLora(ser)
-  print(rcv)
+    s = ser.readline()
+    data = s.decode().strip()
+    print(data)

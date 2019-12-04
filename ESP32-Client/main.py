@@ -11,7 +11,7 @@ import sys
 import time
 
 #MQTT params
-mqtt_server = '192.168.12.40'
+mqtt_server = '192.168.12.12'
 client_id = 'esp32'
 # Topic
 rfid_swipe = b'/devices/esp32/rfid_swipe'

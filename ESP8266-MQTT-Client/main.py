@@ -6,7 +6,7 @@ from time import sleep_ms
 import machine
 import dht
 
-mqtt_server='192.168.12.40'
+mqtt_server='192.168.12.12'
 client_id = 'esp8266'
 dht_data = b'/devices/esp8266/dht_data'
 switch_control = b'/devices/esp8266/switch'

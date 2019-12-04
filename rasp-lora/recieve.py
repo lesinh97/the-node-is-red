@@ -2,17 +2,19 @@ import time
 import serial
 import paho.mqtt.client as mqtt
 
-# MQTT_SERVER = "localhost"
-# lora_signal = "devices/lora/"
-# client_id = "raspberry"
-# # MQTT Callback
-# def on_connect(client, userdata, flags, rc):
-#   print("Connected to server, result code "+str(rc))
-#   client.connected_flags = True
+MQTT_SERVER = "localhost"
+lora_signal = "devices/lora/"
+tx_indicate = "devices/raspberry/tx"
+rx_indicate = "devices/raspberry/rx"
+client_id = "raspberry"
+# MQTT Callback
+def on_connect(client, userdata, flags, rc):
+  print("Connected to server, result code "+str(rc))
+  client.connected_flags = True
 
-# client = mqtt.Client()
-# client.on_connect = on_connect
-# client.connect(client_id, MQTT_SERVER)
+client = mqtt.Client()
+client.connect("127.0.0.1", 1883, 60)
+client.on_connect = on_connect
 
 ser = serial.Serial(
   port = '/dev/ttyAMA0',
@@ -24,6 +26,15 @@ ser = serial.Serial(
 )
 
 while True:
-    s = ser.readline()
-    data = s.decode().strip()
+  time.sleep(1)
+  s = ser.readline()
+  data = s.decode().strip()
+  if (data!=""):
+    client.publish(lora_signal, data)
     print(data)
+    time.sleep(1)
+    client.publish(tx_indicate, "on")
+  else: 
+    client.publish(tx_indicate, "off")
+    print("No data")
+  time.sleep(0.5)

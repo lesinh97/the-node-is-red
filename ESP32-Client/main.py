@@ -98,14 +98,16 @@ def do_read():
   print("Place card before reader to read from address 0x08")
   print("")
   hex_uid = ""
+  global start_reading
   start_reading = time.ticks_ms()
   try:
     while (working):
+      client.check_msg()
       (stat, tag_type) = rdr.request(rdr.REQIDL)
       if stat == rdr.OK:
         (stat, raw_uid) = rdr.anticoll()
-        
         if stat == rdr.OK:
+          start_reading = time.ticks_ms()
           print("New card detected")
           print("  - tag type: 0x%02x" % tag_type)
           hex_uid = twoDigitHex(raw_uid[0]) + twoDigitHex(raw_uid[1]) + twoDigitHex(raw_uid[2]) + twoDigitHex(raw_uid[3])

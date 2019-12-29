@@ -30,7 +30,8 @@ def tx_blink(): # 750ms 0.75
     tx_led.off()
     led_indicate.on()
 
-while True: 
+while True:
+  sleep(2) 
   mea_value = mea.read()
   humd_value = 100-((mea_value/1023)*100)
   round_humd_value = round(humd_value,1)
@@ -41,12 +42,11 @@ while True:
   sleep(2)
   receive = serial.readline()
   print(receive)
-  if(receive == b"on\n"):
+  if(receive == b'on\n'):
     pump_valve.off()
     led_indicate.off()
     valve_led.on()
-  elif(receive == b"off\n"):
+  if(receive == b'off\n'):
     pump_valve.on()
     valve_led.off()
     led_indicate.on()
-  sleep(2)
